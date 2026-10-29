@@ -71,7 +71,7 @@ To fit other parameters, put new placeholder names in the template and edit
 size must be a multiple of 4; this is not checked.
 
 **reffit**: one reference energy per line, in this order:
-
+NOTE: only scan3 and one water cluster is shared in this repository.
 | lines   | data                                                        |
 |---------|-------------------------------------------------------------|
 | 1–41    | scan1: dimer, monomer 2 translated in 41 steps              |
