@@ -1,0 +1,70 @@
+#----Variable section----#
+
+units                   real
+boundary                f f f
+special_bonds           lj/coul 1.0 1.0 1.0
+atom_style              pqeq
+bond_style              harmonic
+angle_style             harmonic
+read_data               data.str01
+timestep                1.0
+
+bond_coeff     1 0.0 1.0
+angle_coeff    1 0.0 104
+
+pair_style     hybrid/overlay coul/pqeqgauss 0 12.0 0 reaxff/rexpon control bond 2 angle 2 vdw 1 hbond 1 nonreactive 1
+pair_coeff     * * reaxff/rexpon test.ffield.RexPoN H O
+pair_coeff * * coul/pqeqgauss 0 0 0 0 0 0 0 0 # dummy
+                  # Xi Ji Rc polar Qc Rs K2 K4
+pair_coeff 1 1 coul/pqeqgauss 4.528 12.9841 0.371 1 1.0 0.371 2037.20061 0.0
+pair_coeff 2 2 coul/pqeqgauss 8.741 13.364 0.669 1 1.0 0.669 414.04451 0.0
+
+fix  pqeq all psq 1 1 3 1.0e-6 400
+
+variable        sname index watdrop
+variable        targetP equal 1.0 
+variable        targetT1 equal 100
+variable        targetT2 equal 200
+variable        targetT3 equal 298.15
+
+
+###################################################
+compute         pqeq all pair coul/pqeqgauss
+compute         reax all pair reaxff/rexpon
+variable eb     equal c_reax[1]   #data->my_en.e_bond;   键
+variable ea     equal c_reax[2]   # data->my_en.e_ov + data->my_en.e_un;
+variable elp    equal c_reax[3]   # data->my_en.e_lp;  Lone Pair ?
+variable emol   equal c_reax[4]   # 0.0;
+variable ev     equal c_reax[5]   # data->my_en.e_ang;  键角能量
+variable epen   equal c_reax[6]   # data->my_en.e_pen;  ？
+variable ecoa   equal c_reax[7]   # data->my_en.e_coa;  ？
+variable ehb    equal c_reax[8]   # data->my_en.e_hb;   氢键
+variable et     equal c_reax[9]   # data->my_en.e_tor;  Torsion
+variable eco    equal c_reax[10]   # data->my_en.e_con;  ？
+variable ew     equal c_reax[11]   #  data->my_en.e_vdW; 范德华
+variable epqeq  equal c_pqeq
+
+variable nobond equal v_elp+v_ehb+v_ew+v_epqeq
+
+#velocity all create 30.0 4928459 rot yes dist gaussian
+#fix                  OHfixed all shake 0.001 20 0 b 1 a 1
+#fix                  Momt all momentum 1 linear 1 1 1 angular
+
+print                          .
+print =====================================
+print "Heat to ${targetT3} K"
+print =====================================
+print            .
+
+log             ${sname}.heatTo${targetT3}K.eng
+thermo          1
+dump            1 all custom 1 ${sname}.heatTo${targetT3}K.lammps id type xu yu zu vx vy vz mol sx sy sz fx fy fz q
+#thermo_style    custom step temp etotal pe ke v_eb v_ew v_ehb v_elp v_ev v_epqeq press pxx pyy pzz pxy pxz pyz vol density xlo xhi lx
+#                           键 VDW     氢键  LP？   键角   PQEQ
+thermo_style    custom step press etotal evdwl ecoul v_eb v_ea v_elp v_emol v_ev v_epen v_ecoa v_ehb v_et v_eco v_ew v_epqeq v_nobond
+thermo_modify   line multi
+#fix             1 all npt temp 30.0 ${targetT3} 100.0 iso 1.0 1.0 1000.0
+#fix             1 all nve
+run             0
+#minimize 0.0 1.0e-8 1000 100000
+undump          1
